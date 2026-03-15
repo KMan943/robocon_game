@@ -2,20 +2,29 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "stb_image.h"
-#include "Shader.h"
+#include "Shader.hpp"
 
 int main() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(800, 600, "Triangle", NULL, NULL);
+    
+    if (window == NULL) {
+		std::cout << "Failed to create GLFW window. Try lowering the OpenGL version further or checking drivers." << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     // --- 1. Build and Compile Shaders ---
-    Shader ourShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+    Shader ourShader("assets/shaders/vertex_shader.glsl", "assets/shaders/fragment_shader.glsl");
 
     // --- 1. Texture Setup ---
     unsigned int texture; // Declare it here so it's visible to the loop!
@@ -30,7 +39,7 @@ int main() {
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("textures/meowl.jpeg", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("assets/textures/meowl.jpeg", &width, &height, &nrChannels, 0);
 
     if (data) {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
