@@ -24,6 +24,8 @@ add_executable(MyGame
     src/glad.c
     src/stb_image.cpp
     src/Shader.cpp
+    src/Camera.cpp 
+    src/Physics.cpp
 )
 
 # 5. Link the libraries to your game
