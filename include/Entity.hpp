@@ -26,7 +26,24 @@ public:
 class Player : public Entity {
 public:
     glm::vec3 vel = glm::vec3(0.0f);
+    
+    // the Coyote time problem
+    float coyoteCounter = 0.0f;
+    const float coyoteTime = 0.15f;
+    bool grounded = false;
+
     Player(glm::vec3 p) : Entity(p, glm::vec3(0.8f), glm::vec3(1.0f, 0.5f, 0.0f)) {}
+
+    void Update(float dt){
+        // decreasing the counter every frame
+        if(!grounded){
+            coyoteCounter -= dt;
+        }
+        else{
+            coyoteCounter = coyoteTime;
+        }
+        pos += vel * dt;
+    }
 
     void Draw(Shader& shader) override {
         shader.setVec3("objectColor", color);
@@ -41,7 +58,9 @@ public:
     bool isHole;
     Tile(glm::vec3 p, bool hole) 
         : Entity(p, glm::vec3(2.0f, 0.2f, 2.0f), glm::vec3(0.2f, 0.7f, 0.2f)), isHole(hole) {
-        if (isHole) color = glm::vec3(0.05f); // Make holes look dark
+        if (isHole) 
+            color = glm::vec3(0.05f); // Make holes look dark
+        
     }
 
     void Draw(Shader& shader) override {

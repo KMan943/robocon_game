@@ -85,14 +85,14 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // Position attribute (location 0)
+    // position attribute (location 0)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // Normal attribute (location 1)
+    // normal attribute (location 1)
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // Binding the VAO
+    // binding the VAO
     glBindVertexArray(VAO);
     glEnable(GL_DEPTH_TEST);
 
@@ -103,7 +103,8 @@ int main() {
     std::vector<Tile*> floor;
     for(int x = -3; x <= 3; x++) {
         for(int z = -3; z <= 3; z++) {
-            bool hole = (x == 0 && z == 0); // Hole in the middle
+            // Hole 
+            bool hole = (x == 1 && z == 1); 
             floor.push_back(new Tile(glm::vec3(x * 2.1f, 0, z * 2.1f), hole));
         }
     }
@@ -111,21 +112,52 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         float dt = 0.016f; // Standard frame time
         
-        // 1. INPUT (WASD)
-        float speed = 5.0f * dt;
-        if(glfwGetKey(window, GLFW_KEY_W)) robot.pos.z -= speed;
-        if(glfwGetKey(window, GLFW_KEY_S)) robot.pos.z += speed;
-        if(glfwGetKey(window, GLFW_KEY_A)) robot.pos.x -= speed;
-        if(glfwGetKey(window, GLFW_KEY_D)) robot.pos.x += speed;
+        // 1. movements
+        // getting the local directions from the camera
 
-        // 2. PHYSICS (Fall through hole)
-        Physics::UpdatePhysics(robot, floor, dt); 
+        float yawRad = glm::radians(camera.yaw);
+
+        glm::vec3 forward;
+        forward.x = cos(yawRad);
+        forward.z = sin(yawRad);
+        forward = glm::normalize(forward);
+
+        // right = forward rotated by 90 degrees
+        glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,-1,0)));
+
+        // speed
+        float speed = 4.0f * dt;
+
+        
+        // INPUT (WASD)
+        // moving away from the camera
+        if(glfwGetKey(window, GLFW_KEY_W))
+            robot.pos -= forward*speed;
+        if(glfwGetKey(window, GLFW_KEY_S))
+            robot.pos += forward*speed;
+        if(glfwGetKey(window, GLFW_KEY_A))
+            robot.pos -= right*speed;
+        if(glfwGetKey(window, GLFW_KEY_D))
+            robot.pos += right*speed;
+
+
+        // Manual respawn
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
             robot.pos = glm::vec3(0.0f, 5.0f, 0.0f);
             robot.vel = glm::vec3(0.0f);
         }
-        robot.pos += robot.vel * dt;
 
+        // jump
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && robot.coyoteCounter > 0) {
+            robot.vel.y = 6.0f;
+            robot.coyoteCounter = 0.0f;
+        }
+        
+        // 2. PHYSICS (Fall through hole)
+        robot.Update(dt);
+        Physics::UpdatePhysics(robot, floor, dt); 
+        
+        // Fail condition
         if (robot.pos.y < -10.0f) {
             lives--;
             std::cout << "GAME OVER: You fell into the void!" << std::endl;
