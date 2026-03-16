@@ -1,0 +1,19 @@
+#pragma once
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+class Camera {
+public:
+    float distance = 8.0f;
+    float yaw = -90.0f;
+    float pitch = 20.0f;
+
+    glm::mat4 GetViewMatrix(glm::vec3 target) {
+        // Convert angles to a 3D position
+        float x = target.x + distance * cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+        float y = target.y + distance * sin(glm::radians(pitch));
+        float z = target.z + distance * cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+        
+        return glm::lookAt(glm::vec3(x, y, z), target, glm::vec3(0, 1, 0));
+    }
+};

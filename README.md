@@ -11,7 +11,7 @@
 
 # run 
 `` cd build ``
-`` ./MyGame ``
+`` ./Game ``
 
 # recommended
 install the **Cmake Tools extension** and the **Shader languages support for vs code** extension for ease of use

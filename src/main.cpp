@@ -1,53 +1,79 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include "stb_image.h"
-#include "Shader.h"
+#include <vector>
+#include "Shader.hpp"
+#include "Camera.hpp"
+#include "Entity.hpp"
+#include "Physics.hpp"
+#include "iostream"
+
+
+// Global state for mouse
+Camera camera;
+float lastX = 400, lastY = 300;
+bool firstMouse = true;
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) { lastX = xpos; lastY = ypos; firstMouse = false; }
+    camera.yaw   += (xpos - lastX) * 0.1f;
+    camera.pitch -= (ypos - lastY) * 0.1f; // Inverted Y
+    if (camera.pitch > 89.0f) camera.pitch = 89.0f;
+    if (camera.pitch < -89.0f) camera.pitch = -89.0f;
+    lastX = xpos; lastY = ypos;
+}
 
 int main() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Triangle", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Robocon 3D", NULL, NULL);
     glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Lock mouse
+    glfwSetCursorPosCallback(window, mouse_callback);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    // --- 1. Build and Compile Shaders ---
-    Shader ourShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
-
-    // --- 1. Texture Setup ---
-    unsigned int texture; // Declare it here so it's visible to the loop!
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    // Set wrapping/filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);   
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("textures/meowl.jpeg", &width, &height, &nrChannels, 0);
-
-    if (data) {
-        GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture. Reason: " << stbi_failure_reason() << std::endl;
-    }
-    stbi_image_free(data);
-
-    // --- 2. Set up Vertex Data ---
+    // 36 Vertices for a 1x1x1 Cube with Normals (for lighting)
     float vertices[] = {
-        // positions          // texture coords
-        0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-        0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
+        // positions          // normals
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
 
     unsigned int VBO, VAO;
@@ -59,35 +85,74 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Position attribute (location 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    // Texture attribute (location 1)
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    // Normal attribute (location 1)
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // --- 3. Render Loop ---
+    // IMPORTANT: Bind this VAO before your render loop
+    glBindVertexArray(VAO);
+
+    glEnable(GL_DEPTH_TEST);
+
+    Shader shader("assets/shaders/vertex_shader.glsl", "assets/shaders/fragment_shader.glsl");
+    Player robot(glm::vec3(0.0f, 5.0f, 0.0f));
+    
+    // Create tiled floor with a hole
+    std::vector<Tile*> floor;
+    for(int x = -3; x <= 3; x++) {
+        for(int z = -3; z <= 3; z++) {
+            bool hole = (x == 0 && z == 0); // Hole in the middle
+            floor.push_back(new Tile(glm::vec3(x * 2.1f, 0, z * 2.1f), hole));
+        }
+    }
+
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        float dt = 0.016f; // Standard frame time
+        
+        // 1. INPUT (WASD)
+        float speed = 5.0f * dt;
+        if(glfwGetKey(window, GLFW_KEY_W)) robot.pos.z -= speed;
+        if(glfwGetKey(window, GLFW_KEY_S)) robot.pos.z += speed;
+        if(glfwGetKey(window, GLFW_KEY_A)) robot.pos.x -= speed;
+        if(glfwGetKey(window, GLFW_KEY_D)) robot.pos.x += speed;
 
-        // Now 'texture' is recognized!
-        glBindTexture(GL_TEXTURE_2D, texture);
+        // 2. PHYSICS (Fall through hole)
+        Physics::UpdatePhysics(robot, floor, dt); // Call the centralized physics function
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+            robot.pos = glm::vec3(0.0f, 5.0f, 0.0f);
+            robot.vel = glm::vec3(0.0f);
+        }
+        robot.pos += robot.vel * dt;
 
-        ourShader.use(); 
+        if (robot.pos.y < -10.0f) {
+            std::cout << "GAME OVER: You fell into the void!" << std::endl;
+            
+            // Reset State
+            robot.pos = glm::vec3(0.0f, 5.0f, 0.0f);
+            robot.vel = glm::vec3(0.0f);
+            
+            // Future: Here is where you would decrease 'Lives' or show a UI screen
+        }
 
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // for(auto t : floor) {
+        //     if(!t->isHole && abs(robot.pos.x - t->pos.x) < 1.0f && abs(robot.pos.z - t->pos.z) < 1.0f) {
+        //         if(robot.pos.y < 0.5f) { robot.pos.y = 0.5f; robot.vel.y = 0; }
+        //     }
+        // }
+
+        // 3. RENDER
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        shader.use();
+        shader.setMat4("projection", glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f));
+        shader.setMat4("view", camera.GetViewMatrix(robot.pos));
+
+        robot.Draw(shader);
+        for(auto t : floor) t->Draw(shader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    // Cleanup
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteProgram(ourShader.ID); // Use the ID from the class
-
-    glfwTerminate();
     return 0;
 }
