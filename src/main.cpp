@@ -12,6 +12,7 @@
 Camera camera;
 float lastX = 400, lastY = 300;
 bool firstMouse = true;
+int lives = 5;
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     if (firstMouse) { lastX = xpos; lastY = ypos; firstMouse = false; }
@@ -91,15 +92,14 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // IMPORTANT: Bind this VAO before your render loop
+    // Binding the VAO
     glBindVertexArray(VAO);
-
     glEnable(GL_DEPTH_TEST);
 
     Shader shader("assets/shaders/vertex_shader.glsl", "assets/shaders/fragment_shader.glsl");
     Player robot(glm::vec3(0.0f, 5.0f, 0.0f));
     
-    // Create tiled floor with a hole
+    // tiled floor with a hole
     std::vector<Tile*> floor;
     for(int x = -3; x <= 3; x++) {
         for(int z = -3; z <= 3; z++) {
@@ -119,7 +119,7 @@ int main() {
         if(glfwGetKey(window, GLFW_KEY_D)) robot.pos.x += speed;
 
         // 2. PHYSICS (Fall through hole)
-        Physics::UpdatePhysics(robot, floor, dt); // Call the centralized physics function
+        Physics::UpdatePhysics(robot, floor, dt); 
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
             robot.pos = glm::vec3(0.0f, 5.0f, 0.0f);
             robot.vel = glm::vec3(0.0f);
@@ -127,13 +127,15 @@ int main() {
         robot.pos += robot.vel * dt;
 
         if (robot.pos.y < -10.0f) {
+            lives--;
             std::cout << "GAME OVER: You fell into the void!" << std::endl;
-            
+            std::cout << "lives left: " << lives << std::endl;
+            // Future: Here is where we would show a UI screen
             // Reset State
+            if(lives == 0) break;
             robot.pos = glm::vec3(0.0f, 5.0f, 0.0f);
             robot.vel = glm::vec3(0.0f);
             
-            // Future: Here is where you would decrease 'Lives' or show a UI screen
         }
 
         // for(auto t : floor) {
