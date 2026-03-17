@@ -32,3 +32,27 @@ void Physics::UpdatePhysics(Player& player, const std::vector<Tile*>& floor, flo
         }
     }
 }
+
+bool Physics::CheckCoinCollision(const Player& player, const Coin& coin) {
+    if (!coin.isActive) return false;
+
+    // Simple AABB collision
+    float playerHalfWidth = player.size.x / 2.0f;
+    float playerHalfHeight = player.size.y / 2.0f;
+    float playerHalfDepth = player.size.z / 2.0f;
+
+    float coinHalfWidth = coin.size.x / 2.0f;
+    float coinHalfHeight = coin.size.y / 2.0f;
+    float coinHalfDepth = coin.size.z / 2.0f;
+
+    bool collisionX = player.pos.x + playerHalfWidth >= coin.pos.x - coinHalfWidth &&
+                      coin.pos.x + coinHalfWidth >= player.pos.x - playerHalfWidth;
+
+    bool collisionY = player.pos.y + playerHalfHeight >= coin.pos.y - coinHalfHeight &&
+                      coin.pos.y + coinHalfHeight >= player.pos.y - playerHalfHeight;
+
+    bool collisionZ = player.pos.z + playerHalfDepth >= coin.pos.z - coinHalfDepth &&
+                      coin.pos.z + coinHalfDepth >= player.pos.z - playerHalfDepth;
+
+    return collisionX && collisionY && collisionZ;
+}

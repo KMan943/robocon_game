@@ -7,6 +7,7 @@
 #include "Physics.hpp"
 #include "iostream"
 
+#include <string>
 
 // Global state for mouse
 Camera camera;
@@ -98,7 +99,13 @@ int main() {
 
     Shader shader("assets/shaders/vertex_shader.glsl", "assets/shaders/fragment_shader.glsl");
     Player robot(glm::vec3(0.0f, 5.0f, 0.0f));
+    Coin coin;
     
+    int score = 0;
+    float coinSpawnTimer = 0.0f;
+    const float coinSpawnInterval = 3.0f; // Seconds between spawns
+    const float coinActiveDuration = 5.0f; // Seconds coin stays active
+
     // tiled floor with a hole
     std::vector<Tile*> floor;
     for(int x = -3; x <= 3; x++) {
@@ -157,6 +164,45 @@ int main() {
         robot.Update(dt);
         Physics::UpdatePhysics(robot, floor, dt); 
         
+        // --- COIN LOGIC ---
+        if (!coin.isActive) {
+            coinSpawnTimer += dt;
+            if (coinSpawnTimer >= coinSpawnInterval) {
+                // Spawn the coin
+                coinSpawnTimer = 0.0f;
+                
+                // Pick a random valid tile
+                std::vector<Tile*> validTiles;
+                for (auto t : floor) {
+                    if (!t->isHole) validTiles.push_back(t);
+                }
+                
+                if (!validTiles.empty()) {
+                    int randomIndex = rand() % validTiles.size();
+                    Tile* selectedTile = validTiles[randomIndex];
+                    
+                    coin.pos = selectedTile->pos + glm::vec3(0.0f, 1.0f, 0.0f); // Spawn above tile
+                    coin.isActive = true;
+                    coin.activeTime = 0.0f;
+                }
+            }
+        } else {
+            coin.Update(dt);
+            if (coin.activeTime >= coinActiveDuration) {
+                coin.isActive = false; // Despawn
+            } else if (Physics::CheckCoinCollision(robot, coin)) {
+                // Collect coin
+                coin.isActive = false;
+                score++;
+                std::cout << "Coin collected! Score: " << score << std::endl;
+                
+                // Update window title
+                std::string currentTitle = "Robocon 3D - Score: " + std::to_string(score);
+                glfwSetWindowTitle(window, currentTitle.c_str());
+            }
+        }
+        // --- END COIN LOGIC ---
+        
         // Fail condition
         if (robot.pos.y < -10.0f) {
             lives--;
@@ -183,6 +229,7 @@ int main() {
         shader.setMat4("view", camera.GetViewMatrix(robot.pos));
 
         robot.Draw(shader);
+        coin.Draw(shader);
         for(auto t : floor) t->Draw(shader);
 
         glfwSwapBuffers(window);

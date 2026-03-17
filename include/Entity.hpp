@@ -71,3 +71,36 @@ public:
         }
     }
 };
+
+// --- THE COIN ---
+class Coin : public Entity {
+public:
+    bool isActive = false;
+    float activeTime = 0.0f;
+    float rotationAngle = 0.0f;
+
+    Coin() : Entity(glm::vec3(0.0f), glm::vec3(0.4f), glm::vec3(1.0f, 1.0f, 0.0f)) {} // Yellow, smaller cube
+
+    void Update(float dt) {
+        if (isActive) {
+            activeTime += dt;
+            rotationAngle += 90.0f * dt; // Rotate 90 degrees per second
+            if (rotationAngle >= 360.0f) rotationAngle -= 360.0f;
+        }
+    }
+
+    void Draw(Shader& shader) override {
+        if (isActive) {
+            shader.setVec3("objectColor", color);
+            
+            // Custom model matrix to include rotation
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+            // Rotate around Y axis
+            model = glm::rotate(model, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, size);
+            
+            shader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+    }
+};
