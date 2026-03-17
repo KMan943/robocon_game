@@ -4,9 +4,9 @@
 
 class Camera {
 public:
-    float distance = 8.0f;
+    float distance = 16.0f; // Increased backwards distance
     float yaw = -90.0f;
-    float pitch = 20.0f;
+    float pitch = 35.0f; // Pitch camera slightly further down
 
     glm::mat4 GetViewMatrix(glm::vec3 target) {
         // Convert angles to a 3D position

@@ -104,14 +104,14 @@ int main() {
     int score = 0;
     float coinSpawnTimer = 0.0f;
     const float coinSpawnInterval = 3.0f; // Seconds between spawns
-    const float coinActiveDuration = 5.0f; // Seconds coin stays active
+    const float coinActiveDuration = 10.0f; // Increased coin duration
 
-    // tiled floor with a hole
+    // tiled floor with multiple holes
     std::vector<Tile*> floor;
-    for(int x = -3; x <= 3; x++) {
-        for(int z = -3; z <= 3; z++) {
-            // Hole 
-            bool hole = (x == 1 && z == 1); 
+    for(int x = -7; x <= 7; x++) {
+        for(int z = -7; z <= 7; z++) {
+            // Holes at specific coordinates
+            bool hole = (x == 2 && z == 2) || (x == -4 && z == 5) || (x == 5 && z == -3); 
             floor.push_back(new Tile(glm::vec3(x * 2.1f, 0, z * 2.1f), hole));
         }
     }
