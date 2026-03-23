@@ -6,7 +6,7 @@ void Physics::UpdatePhysics(Player& player, const std::vector<Tile*>& floor, flo
     player.grounded = false;
 
     // Apply Constant Gravity
-    player.vel.y -= 10.0f * dt;
+    player.vel.y -= 15.0f * dt;
 
 
     // Collision Detection Loop

@@ -14,6 +14,8 @@ Camera camera;
 float lastX = 400, lastY = 300;
 bool firstMouse = true;
 int lives = 5;
+bool cursorEnabled = false;
+bool escPressedLastFrame = false;
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     if (firstMouse) { lastX = xpos; lastY = ypos; firstMouse = false; }
@@ -35,7 +37,7 @@ int main() {
     // 36 Vertices for a 1x1x1 Cube with Normals (for lighting)
     float vertices[] = {
         // positions          // normals
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,                  
         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
@@ -117,6 +119,18 @@ int main() {
     }
 
     while (!glfwWindowShouldClose(window)) {
+        int escState = glfwGetKey(window, GLFW_KEY_ESCAPE);
+        if (escState == GLFW_PRESS && !escPressedLastFrame) {
+            cursorEnabled = !cursorEnabled;
+
+            if (cursorEnabled) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                firstMouse = true;
+            } else {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+        }
+        escPressedLastFrame = (escState == GLFW_PRESS);
         float dt = 0.016f; // Standard frame time
         
         // 1. movements
@@ -133,7 +147,7 @@ int main() {
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0,-1,0)));
 
         // speed
-        float speed = 4.0f * dt;
+        float speed = 6.0f * dt;
 
         
         // INPUT (WASD)

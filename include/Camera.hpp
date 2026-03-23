@@ -4,7 +4,7 @@
 
 class Camera {
 public:
-    float distance = 16.0f; // Increased backwards distance
+    float distance = 12.0f; // Increased backwards distance
     float yaw = -90.0f;
     float pitch = 35.0f; // Pitch camera slightly further down
 
