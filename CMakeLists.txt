@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 2. Tell CMake where to look for your .h files
 include_directories(include)
+include_directories(include/imgui)
 
 # 3. Find necessary Linux libraries
 find_package(OpenGL REQUIRED)
@@ -26,6 +27,13 @@ add_executable(Game
     src/Shader.cpp
     src/Camera.cpp
     src/Physics.cpp
+    src/imgui/imgui.cpp
+    src/imgui/imgui_demo.cpp
+    src/imgui/imgui_draw.cpp
+    src/imgui/imgui_tables.cpp
+    src/imgui/imgui_widgets.cpp
+    src/imgui/imgui_impl_glfw.cpp
+    src/imgui/imgui_impl_opengl3.cpp
 )
 
 # 5. Link the libraries to your game
