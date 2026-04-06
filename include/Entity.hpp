@@ -33,7 +33,7 @@ public:
     const float coyoteTime = 0.15f;
     bool grounded = false;
 
-    Player(glm::vec3 p) : Entity(p, glm::vec3(0.8f), glm::vec3(1.0f, 0.5f, 0.0f)) {}
+    Player(glm::vec3 p) : Entity(p, glm::vec3(1.2f), glm::vec3(1.0f, 0.5f, 0.0f)) {}
 
     void Update(float dt){
         // decreasing the counter every frame
@@ -50,6 +50,7 @@ public:
         // Base translation and rotation for the player
         glm::mat4 baseModel = glm::translate(glm::mat4(1.0f), pos);
         baseModel = glm::rotate(baseModel, glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+        baseModel = glm::scale(baseModel, size); // Scale the visual parts
         
         // Colors for Wall-E
         glm::vec3 bodyColor = glm::vec3(0.9f, 0.7f, 0.1f); // Yellowish orange
@@ -120,18 +121,52 @@ public:
 class Tile : public Entity {
 public:
     bool isHole;
+    glm::vec3 vel = glm::vec3(0.0f); // Used for moving platforms
+
     Tile(glm::vec3 p, bool hole) 
         : Entity(p, glm::vec3(2.0f, 0.2f, 2.0f), glm::vec3(0.2f, 0.7f, 0.2f)), isHole(hole) {
         if (isHole) 
             color = glm::vec3(0.05f); // Make holes look dark
-        
     }
+
+    virtual void Update(float dt) {}
 
     void Draw(Shader& shader) override {
         if (!isHole) { // We don't draw the hole, just the gap!
             shader.setVec3("objectColor", color);
             shader.setMat4("model", GetModelMatrix());
             glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+    }
+};
+
+class MovingPlatform : public Tile {
+public:
+    glm::vec3 posA;
+    glm::vec3 posB;
+    float speed;
+    int direction = 1;
+
+    MovingPlatform(glm::vec3 a, glm::vec3 b, float s) : Tile(a, false), posA(a), posB(b), speed(s) {
+        color = glm::vec3(0.8f, 0.4f, 0.1f); // Orange moving platform!
+    }
+
+    void Update(float dt) override {
+        glm::vec3 dirVec = glm::normalize(posB - posA);
+        glm::vec3 velocity = dirVec * speed * (float)direction;
+        pos += velocity * dt;
+        vel = velocity;
+        
+        float distA = glm::length(pos - posA);
+        float distB = glm::length(pos - posB);
+        float totalDist = glm::length(posB - posA);
+        
+        if (direction == 1 && distA >= totalDist) {
+            direction = -1;
+            pos = posB;
+        } else if (direction == -1 && distB >= totalDist) {
+            direction = 1;
+            pos = posA;
         }
     }
 };
@@ -143,7 +178,7 @@ public:
     float activeTime = 0.0f;
     float rotationAngle = 0.0f;
 
-    Coin() : Entity(glm::vec3(0.0f), glm::vec3(0.4f), glm::vec3(1.0f, 0.84f, 0.0f)) {} // Gold base color
+    Coin() : Entity(glm::vec3(0.0f), glm::vec3(0.6f), glm::vec3(1.0f, 0.84f, 0.0f)) {} // Gold base color
 
     void Update(float dt) {
         if (isActive) {
@@ -162,6 +197,9 @@ public:
             
             // Tilt it up so it stands vertically (rotate around X)
             baseModel = glm::rotate(baseModel, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            
+            // Visual scale up matching the new size ratio (0.6 / 0.4 = 1.5)
+            baseModel = glm::scale(baseModel, glm::vec3(1.5f));
 
             // Draw the outer ring (12-sided disk)
             shader.setVec3("objectColor", color); // bright gold
@@ -181,5 +219,74 @@ public:
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
         }
+    }
+};
+
+// --- THE OBSTACLE ---
+class Obstacle : public Entity {
+public:
+    Obstacle(glm::vec3 p) : Entity(p, glm::vec3(0.4f), glm::vec3(0.9f, 0.1f, 0.1f)) {} // Hitbox is tiny (0.4), visual is larger
+
+    void Draw(Shader& shader) override {
+        glm::mat4 baseModel = glm::translate(glm::mat4(1.0f), pos);
+        // We use a fixed visual scale of 1.0f here and apply it to parts
+        // to decouple from the 0.4f hitbox size
+        
+        // Core of the mine (Visual size 0.9)
+        shader.setVec3("objectColor", glm::vec3(0.2f, 0.2f, 0.2f)); 
+        glm::mat4 modelCore = glm::scale(baseModel, glm::vec3(0.9f, 0.9f, 0.9f));
+        shader.setMat4("model", modelCore);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Red Spikes (Visual size 1.6)
+        shader.setVec3("objectColor", color);
+        
+        // X spike
+        glm::mat4 spikeX = glm::scale(baseModel, glm::vec3(1.6f, 0.2f, 0.2f));
+        shader.setMat4("model", spikeX);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        
+        // Y spike
+        glm::mat4 spikeY = glm::scale(baseModel, glm::vec3(0.2f, 1.6f, 0.2f));
+        shader.setMat4("model", spikeY);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        
+        // Z spike
+        glm::mat4 spikeZ = glm::scale(baseModel, glm::vec3(0.2f, 0.2f, 1.6f));
+        shader.setMat4("model", spikeZ);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+};
+
+// --- THE GOAL ---
+class Goal : public Entity {
+public:
+    float rotationAngle = 0.0f;
+
+    Goal(glm::vec3 p) : Entity(p, glm::vec3(1.5f, 3.0f, 1.5f), glm::vec3(0.2f, 0.9f, 0.9f)) {} // Cyan portal/marker
+
+    void Update(float dt) {
+        rotationAngle += 90.0f * dt; // Rotate portal
+        if(rotationAngle >= 360.0f) rotationAngle -= 360.0f;
+    }
+
+    void Draw(Shader& shader) override {
+        glm::mat4 baseModel = glm::translate(glm::mat4(1.0f), pos);
+        baseModel = glm::rotate(baseModel, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+        baseModel = glm::scale(baseModel, size);
+        
+        // Draw the Pole
+        shader.setVec3("objectColor", glm::vec3(0.9f, 0.9f, 0.9f));
+        glm::mat4 modelPole = glm::translate(baseModel, glm::vec3(-0.4f, 0.0f, 0.0f));
+        modelPole = glm::scale(modelPole, glm::vec3(0.1f, 1.0f, 0.1f));
+        shader.setMat4("model", modelPole);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Draw the Flag
+        shader.setVec3("objectColor", color);
+        glm::mat4 modelFlag = glm::translate(baseModel, glm::vec3(0.1f, 0.35f, 0.0f));
+        modelFlag = glm::scale(modelFlag, glm::vec3(0.9f, 0.3f, 0.05f));
+        shader.setMat4("model", modelFlag);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
     }
 };
