@@ -9,7 +9,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 2. Tell CMake where to look for your .h files
-include_directories(include)
+include_directories(
+    include 
+    external/imgui 
+    external/imgui/backends
+    ${GLFW_INCLUDE_DIRS}
+)
 
 # 3. Find necessary Linux libraries
 find_package(OpenGL REQUIRED)
@@ -26,6 +31,13 @@ add_executable(Game
     src/Shader.cpp
     src/Camera.cpp
     src/Physics.cpp
+    src/Game.cpp
+    external/imgui/imgui.cpp
+    external/imgui/imgui_draw.cpp
+    external/imgui/imgui_widgets.cpp
+    external/imgui/imgui_tables.cpp
+    external/imgui/backends/imgui_impl_glfw.cpp
+    external/imgui/backends/imgui_impl_opengl3.cpp
 )
 
 # 5. Link the libraries to your game
@@ -34,3 +46,6 @@ target_link_libraries(Game
     ${GLFW_LIBRARIES} 
     dl # Necessary for GLAD on Linux
 )
+
+# 6. CRITICAL: Tell ImGui to use GLAD
+target_compile_definitions(Game PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD)
