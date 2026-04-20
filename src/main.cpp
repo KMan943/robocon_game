@@ -480,6 +480,110 @@ int main() {
                 robot.vel.y = 6.0f;
                 robot.coyoteCounter = 0.0f;
             }
+
+            // ------------------ GAMEPAD SUPPORT ------------------
+            float moveY = 0.0f;
+            float moveX = 0.0f;
+            float lookX = 0.0f; // Added for camera
+            float lookY = 0.0f; // Added for camera
+            bool jumpPressed = false;
+            bool pauseRequested = false;
+            bool vTop = false, vPersp = false, vLeft = false, vRight = false, vFront = false;
+
+            GLFWgamepadstate gpState;
+            if (glfwGetGamepadState(GLFW_JOYSTICK_1, &gpState)) {
+                moveY = gpState.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+                moveX = gpState.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+                lookX = gpState.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+                lookY = gpState.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+                jumpPressed = (gpState.buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS);
+                pauseRequested = (gpState.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS);
+                vTop = (gpState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS);
+                vPersp = (gpState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS);
+                vLeft = (gpState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS);
+                vRight = (gpState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS);
+                vFront = (gpState.buttons[GLFW_GAMEPAD_BUTTON_Y] == GLFW_PRESS);
+            } else if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+                // Raw Joystick Fallback
+                int axesCount, buttonCount, hatCount;
+                const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &axesCount);
+                const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
+                const unsigned char* hats = glfwGetJoystickHats(GLFW_JOYSTICK_1, &hatCount);
+
+                if (axesCount >= 4) {
+                    moveX = axes[0];
+                    moveY = axes[1];
+                    lookX = axes[2];
+                    lookY = axes[3];
+                } else if (axesCount >= 2) {
+                    moveX = axes[0];
+                    moveY = axes[1];
+                }
+                if (buttonCount >= 1) jumpPressed = (buttons[0] == GLFW_PRESS);
+                if (buttonCount >= 8) pauseRequested = (buttons[7] == GLFW_PRESS);
+                if (buttonCount >= 4) vFront = (buttons[3] == GLFW_PRESS);
+                
+                if (hatCount >= 1) {
+                    vTop = (hats[0] & GLFW_HAT_UP);
+                    vPersp = (hats[0] & GLFW_HAT_DOWN);
+                    vLeft = (hats[0] & GLFW_HAT_LEFT);
+                    vRight = (hats[0] & GLFW_HAT_RIGHT);
+                }
+            }
+
+            // Apply Gamepad Inputs
+            if (std::abs(moveY) > 0.1f) robot.pos += robotDir * speed * (-moveY);
+            if (std::abs(moveX) > 0.1f) robot.yaw -= turnSpeed * moveX;
+            
+            // Camera Rotation with Right Stick
+            float camSensitivity = 120.0f * dt;
+            if (std::abs(lookX) > 0.1f) camera.yaw += lookX * camSensitivity;
+            if (std::abs(lookY) > 0.1f) {
+                camera.pitch -= lookY * camSensitivity;
+                if (camera.pitch > 89.0f) camera.pitch = 89.0f;
+                if (camera.pitch < -89.0f) camera.pitch = -89.0f;
+            }
+
+            if (jumpPressed && robot.coyoteCounter > 0) {
+
+                robot.vel.y = 6.0f;
+                robot.coyoteCounter = 0.0f;
+            }
+            if (pauseRequested) {
+                if (!escapePressed) {
+                    gameState = GameState::PAUSED;
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    escapePressed = true;
+                }
+            }
+            if (vTop) {
+                camera.isOrthographic = true;
+                camera.yaw = -90.0f; camera.pitch = 89.0f; camera.orthoSize = 15.0f;
+            }
+            if (vPersp) {
+                camera.isOrthographic = false;
+                camera.pitch = 35.0f; camera.yaw = -90.0f;
+            }
+            if (vLeft) {
+                camera.isOrthographic = true;
+                camera.yaw = 0.0f; camera.pitch = 0.0f; camera.orthoSize = 10.0f;
+            }
+            if (vRight) {
+                camera.isOrthographic = true;
+                camera.yaw = 180.0f; camera.pitch = 0.0f; camera.orthoSize = 10.0f;
+            }
+            if (vFront) {
+                camera.isOrthographic = true;
+                camera.yaw = -90.0f; camera.pitch = 0.0f; camera.orthoSize = 10.0f;
+            }
+
+            // Update escapePressed release state
+            bool escapeNow = (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) || pauseRequested;
+            if (!escapeNow) {
+                escapePressed = false;
+            }
+
+
             
             robot.Update(dt);
             Physics::UpdatePhysics(robot, floor, dt); 
@@ -723,8 +827,21 @@ int main() {
             glBindTexture(GL_TEXTURE_2D, depthMap);
             renderScene(shader);
             
-            // Detect un-pause via ESC key
-            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            // Detect un-pause via ESC key or Gamepad Start
+            bool pauseRequested = false;
+            GLFWgamepadstate gpState;
+            if (glfwGetGamepadState(GLFW_JOYSTICK_1, &gpState)) {
+                pauseRequested = (gpState.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS);
+            } else if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+                int buttonCount;
+                const unsigned char* buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonCount);
+                if (buttonCount >= 8) pauseRequested = (buttons[7] == GLFW_PRESS);
+            }
+            
+            bool pausePressed = (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) || pauseRequested;
+
+            if (pausePressed) {
+
                 if (!escapePressed) {
                     gameState = GameState::PLAYING;
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -733,6 +850,7 @@ int main() {
             } else {
                 escapePressed = false;
             }
+
 
             ImGui::SetNextWindowPos(ImVec2(screenWidth / 2.0f, screenHeight / 2.0f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
             ImGui::SetNextWindowSize(ImVec2(300, 200));
