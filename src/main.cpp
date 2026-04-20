@@ -338,8 +338,19 @@ int main() {
 
     unsigned int coinTexture = loadTexture("assets/textures/coin.png");
     unsigned int tileTexture = loadTexture("assets/textures/tile.png");
+    unsigned int mineTexture = loadTexture("assets/textures/mine.png");
+    unsigned int flagTexture = loadTexture("assets/textures/flag.png");
+    unsigned int robotTexture = loadTexture("assets/textures/walle_body.png");
+    unsigned int eyeTexture = loadTexture("assets/textures/meowl.jpeg"); // Falling back to meowl for eyes
+
+
 
     Player robot(glm::vec3(0.0f, 5.0f, 0.0f));
+    robot.bodyTexture = robotTexture;
+    robot.eyeTexture = eyeTexture;
+
+
+
     
     int score = 0;
     float levelTimer = 120.0f;
@@ -375,8 +386,16 @@ int main() {
             glBindTexture(GL_TEXTURE_2D, tileTexture);
             t->Draw(s);
         }
-        for(auto o : obstacles) o->Draw(s);
-        if(goal && coinsCollectedLevel >= requiredCoins) goal->Draw(s);
+        for(auto o : obstacles) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, mineTexture);
+            o->Draw(s);
+        }
+        if(goal && coinsCollectedLevel >= requiredCoins) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, flagTexture);
+            goal->Draw(s);
+        }
     };
 
     while (!glfwWindowShouldClose(window)) {

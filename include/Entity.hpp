@@ -27,6 +27,10 @@ class Player : public Entity {
 public:
     glm::vec3 vel = glm::vec3(0.0f);
     float yaw = 0.0f; // Rotation angle in degrees
+    unsigned int bodyTexture = 0;
+    unsigned int eyeTexture = 0;
+
+
     
     // the Coyote time problem
     float coyoteCounter = 0.0f;
@@ -60,14 +64,24 @@ public:
         glm::vec3 lensColor = glm::vec3(0.6f, 0.8f, 1.0f); // Light Blue
 
         // 1. Body (Torso)
-        shader.setInt("useTexture", 0);
+        if (bodyTexture != 0) {
+            shader.setInt("useTexture", 1);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, bodyTexture);
+            shader.setVec3("objectColor", glm::vec3(1.0f)); // Neutral color for texture
+        } else {
+            shader.setInt("useTexture", 0);
+            shader.setVec3("objectColor", bodyColor);
+        }
         glm::mat4 modelBody = glm::translate(baseModel, glm::vec3(0.0f, -0.05f, 0.0f));
         modelBody = glm::scale(modelBody, glm::vec3(0.45f, 0.45f, 0.45f));
         shader.setMat4("model", modelBody);
-        shader.setVec3("objectColor", bodyColor);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        shader.setInt("useTexture", 0); // Reset for other parts
+
 
         // 2. Left Tread
+        shader.setInt("useTexture", 0);
         glm::mat4 modelLTread = glm::translate(baseModel, glm::vec3(-0.25f, -0.2f, 0.0f));
         modelLTread = glm::scale(modelLTread, glm::vec3(0.15f, 0.4f, 0.6f));
         shader.setMat4("model", modelLTread);
@@ -80,6 +94,8 @@ public:
         shader.setMat4("model", modelRTread);
         shader.setVec3("objectColor", treadColor);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
 
         // 4. Neck
         glm::mat4 modelNeck = glm::translate(baseModel, glm::vec3(0.0f, 0.25f, 0.0f));
@@ -103,18 +119,36 @@ public:
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // 7. Left Lens
+        if (eyeTexture != 0) {
+            shader.setInt("useTexture", 1);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, eyeTexture);
+            shader.setVec3("objectColor", glm::vec3(1.0f));
+        } else {
+            shader.setInt("useTexture", 0);
+            shader.setVec3("objectColor", lensColor);
+        }
         glm::mat4 modelLLens = glm::translate(baseModel, glm::vec3(-0.12f, 0.45f, 0.16f));
         modelLLens = glm::scale(modelLLens, glm::vec3(0.1f, 0.1f, 0.02f));
         shader.setMat4("model", modelLLens);
-        shader.setVec3("objectColor", lensColor); 
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // 8. Right Lens
+        if (eyeTexture != 0) {
+            shader.setInt("useTexture", 1);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, eyeTexture);
+            shader.setVec3("objectColor", glm::vec3(1.0f));
+        } else {
+            shader.setInt("useTexture", 0);
+            shader.setVec3("objectColor", lensColor);
+        }
         glm::mat4 modelRLens = glm::translate(baseModel, glm::vec3(0.12f, 0.45f, 0.16f));
         modelRLens = glm::scale(modelRLens, glm::vec3(0.1f, 0.1f, 0.02f));
         shader.setMat4("model", modelRLens);
-        shader.setVec3("objectColor", lensColor); 
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        shader.setInt("useTexture", 0);
+
     }
 };
 
@@ -236,13 +270,16 @@ public:
         // to decouple from the 0.4f hitbox size
         
         shader.setInt("useTexture", 0);
-        // Core of the mine (Visual size 0.9)
-        shader.setVec3("objectColor", glm::vec3(0.2f, 0.2f, 0.2f)); 
+        
+        // Core of the mine (Visual size 0.9) - Textured!
+        shader.setInt("useTexture", 1);
+        shader.setVec3("objectColor", glm::vec3(0.5f, 0.5f, 0.5f)); 
         glm::mat4 modelCore = glm::scale(baseModel, glm::vec3(0.9f, 0.9f, 0.9f));
         shader.setMat4("model", modelCore);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Red Spikes (Visual size 1.6)
+        // Red Spikes (Visual size 1.6) - Not textured
+        shader.setInt("useTexture", 0);
         shader.setVec3("objectColor", color);
         
         // X spike
@@ -275,23 +312,31 @@ public:
     }
 
     void Draw(Shader& shader) override {
+        // Base translation to the center of the tile
         glm::mat4 baseModel = glm::translate(glm::mat4(1.0f), pos);
-        baseModel = glm::rotate(baseModel, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-        baseModel = glm::scale(baseModel, size);
         
         shader.setInt("useTexture", 0);
-        // Draw the Pole
+        // Draw the Pole - Centered at baseModel (no translation needed)
         shader.setVec3("objectColor", glm::vec3(0.9f, 0.9f, 0.9f));
-        glm::mat4 modelPole = glm::translate(baseModel, glm::vec3(-0.4f, 0.0f, 0.0f));
-        modelPole = glm::scale(modelPole, glm::vec3(0.1f, 1.0f, 0.1f));
+        // Use individual scaling to avoid affecting the flag's coordinate system
+        glm::mat4 modelPole = glm::scale(baseModel, glm::vec3(size.x * 0.1f, size.y, size.z * 0.1f));
         shader.setMat4("model", modelPole);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Draw the Flag
+        // Draw the Flag - Rotating around the pole!
+        shader.setInt("useTexture", 1);
         shader.setVec3("objectColor", color);
-        glm::mat4 modelFlag = glm::translate(baseModel, glm::vec3(0.1f, 0.35f, 0.0f));
-        modelFlag = glm::scale(modelFlag, glm::vec3(0.9f, 0.3f, 0.05f));
+        
+        // 1. Start from base (at pole center)
+        // 2. Rotate around Y axis
+        glm::mat4 modelFlag = glm::rotate(baseModel, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+        // 3. Translate flag away from the pole (outwards on X)
+        modelFlag = glm::translate(modelFlag, glm::vec3(size.x * 0.45f, size.y * 0.35f, 0.0f));
+        // 4. Scale the flag
+        modelFlag = glm::scale(modelFlag, glm::vec3(size.x * 0.8f, size.y * 0.3f, size.z * 0.05f));
+        
         shader.setMat4("model", modelFlag);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        shader.setInt("useTexture", 0);
     }
 };
