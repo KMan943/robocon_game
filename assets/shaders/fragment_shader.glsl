@@ -3,12 +3,15 @@ out vec4 FragColor;
 
 in vec3 FragPos;
 in vec3 Normal;
+in vec2 TexCoords;
 in vec4 FragPosLightSpace;
 
 uniform vec3 objectColor;
 uniform vec3 lightPos;
 uniform vec3 viewPos;
 uniform sampler2D shadowMap;
+uniform sampler2D texture1;
+uniform bool useTexture;
 
 float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     // perform perspective divide
@@ -40,14 +43,19 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
 void main() {
     vec3 normal = normalize(Normal);
     vec3 lightColor = vec3(1.0);
-    
+
+    vec3 color = objectColor;
+    if (useTexture) {
+        color *= texture(texture1, TexCoords).rgb;
+    }
+
     // Ambient
-    vec3 ambient = 0.3 * objectColor;
+    vec3 ambient = 0.3 * color;
     
     // Diffuse
     vec3 lightDir = normalize(lightPos - FragPos);
     float diff = max(dot(lightDir, normal), 0.0);
-    vec3 diffuse = diff * lightColor * objectColor;
+    vec3 diffuse = diff * lightColor * color;
     
     // Specular (Blinn-Phong)
     vec3 viewDir = normalize(viewPos - FragPos);

@@ -8,6 +8,7 @@
 #include "Camera.hpp"
 #include "Entity.hpp"
 #include "Physics.hpp"
+#include "stb_image.h"
 #include <iostream>
 #include <string>
 
@@ -169,6 +170,37 @@ void reset_game(Player& robot, int& score, int& current_lives, std::vector<Tile*
     loadLevel(currentLevel, floor, obstacles, coins, goal, robot, levelTimer, coinsCollectedLevel, requiredCoins);
 }
 
+// Utility to load a 2D texture
+unsigned int loadTexture(const char* path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data) {
+        GLenum format;
+        if (nrComponents == 1) format = GL_RED;
+        else if (nrComponents == 3) format = GL_RGB;
+        else if (nrComponents == 4) format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    } else {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
+
 int main() {
     glfwInit();
     
@@ -213,48 +245,48 @@ int main() {
 
     // 36 Vertices for a 1x1x1 Cube with Normals
     float vertices[] = {
-        // positions          // normals
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
 
     unsigned int VBO, VAO;
@@ -265,10 +297,12 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -300,6 +334,10 @@ int main() {
 
     shader.use();
     shader.setInt("shadowMap", 1);
+    shader.setInt("texture1", 0);
+
+    unsigned int coinTexture = loadTexture("assets/textures/coin.png");
+    unsigned int tileTexture = loadTexture("assets/textures/tile.png");
 
     Player robot(glm::vec3(0.0f, 5.0f, 0.0f));
     
@@ -327,8 +365,16 @@ int main() {
     auto renderScene = [&](Shader& s) {
         glBindVertexArray(VAO);
         robot.Draw(s);
-        for(auto c : coins) if(c->isActive) c->Draw(s);
-        for(auto t : floor) t->Draw(s);
+        for(auto c : coins) if(c->isActive) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, coinTexture);
+            c->Draw(s);
+        }
+        for(auto t : floor) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tileTexture);
+            t->Draw(s);
+        }
         for(auto o : obstacles) o->Draw(s);
         if(goal && coinsCollectedLevel >= requiredCoins) goal->Draw(s);
     };
@@ -353,6 +399,37 @@ int main() {
                 }
             } else {
                 escapePressed = false;
+            }
+
+            // Projection Hotkeys
+            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+                camera.isOrthographic = true;
+                camera.yaw = -90.0f;
+                camera.pitch = 0.0f;
+                camera.orthoSize = 10.0f;
+            }
+            if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+                camera.isOrthographic = true;
+                camera.yaw = -90.0f;
+                camera.pitch = 89.0f;
+                camera.orthoSize = 15.0f;
+            }
+            if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+                camera.isOrthographic = true;
+                camera.yaw = 0.0f;
+                camera.pitch = 0.0f;
+                camera.orthoSize = 10.0f;
+            }
+            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+                camera.isOrthographic = true;
+                camera.yaw = 180.0f;
+                camera.pitch = 0.0f;
+                camera.orthoSize = 10.0f;
+            }
+            if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+                camera.isOrthographic = false;
+                camera.pitch = 35.0f;
+                camera.yaw = -90.0f;
             }
 
             // Movements
@@ -490,9 +567,13 @@ int main() {
             
             // 2. Render scene as normal
             glViewport(0, 0, screenWidth, screenHeight);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
-            glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+            glm::mat4 projection;
+            if (camera.isOrthographic) {
+                float aspect = (float)screenWidth / (float)screenHeight;
+                projection = glm::ortho(-camera.orthoSize * aspect, camera.orthoSize * aspect, -camera.orthoSize, camera.orthoSize, 0.1f, 100.0f);
+            } else {
+                projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+            }
             glm::mat4 view = camera.GetViewMatrix(robot.pos);
 
             // Draw Background Sky
@@ -534,6 +615,44 @@ int main() {
                 ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "TARGET: DONE! REACH GOAL!");
             } else {
                 ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "TARGET: %d / %d COINS", coinsCollectedLevel, requiredCoins);
+            }
+            ImGui::End();
+
+            // Projection Control Buttons (Bottom Left)
+            ImGui::SetNextWindowPos(ImVec2(10, screenHeight - 60));
+            ImGui::Begin("Projection", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_AlwaysAutoResize);
+            if (ImGui::Button("Front")) {
+                camera.isOrthographic = true;
+                camera.yaw = -90.0f;
+                camera.pitch = 0.0f;
+                camera.orthoSize = 10.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Top")) {
+                camera.isOrthographic = true;
+                camera.yaw = -90.0f;
+                camera.pitch = 89.0f;
+                camera.orthoSize = 15.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Left")) {
+                camera.isOrthographic = true;
+                camera.yaw = 0.0f;
+                camera.pitch = 0.0f;
+                camera.orthoSize = 10.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Right")) {
+                camera.isOrthographic = true;
+                camera.yaw = 180.0f;
+                camera.pitch = 0.0f;
+                camera.orthoSize = 10.0f;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Perspective")) {
+                camera.isOrthographic = false;
+                camera.pitch = 35.0f;
+                camera.yaw = -90.0f;
             }
             ImGui::End();
 

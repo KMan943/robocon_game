@@ -60,6 +60,7 @@ public:
         glm::vec3 lensColor = glm::vec3(0.6f, 0.8f, 1.0f); // Light Blue
 
         // 1. Body (Torso)
+        shader.setInt("useTexture", 0);
         glm::mat4 modelBody = glm::translate(baseModel, glm::vec3(0.0f, -0.05f, 0.0f));
         modelBody = glm::scale(modelBody, glm::vec3(0.45f, 0.45f, 0.45f));
         shader.setMat4("model", modelBody);
@@ -133,6 +134,7 @@ public:
 
     void Draw(Shader& shader) override {
         if (!isHole) { // We don't draw the hole, just the gap!
+            shader.setInt("useTexture", 1);
             shader.setVec3("objectColor", color);
             shader.setMat4("model", GetModelMatrix());
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -201,6 +203,7 @@ public:
             // Visual scale up matching the new size ratio (0.6 / 0.4 = 1.5)
             baseModel = glm::scale(baseModel, glm::vec3(1.5f));
 
+            shader.setInt("useTexture", 1);
             // Draw the outer ring (12-sided disk)
             shader.setVec3("objectColor", color); // bright gold
             for(int i = 0; i < 6; i++) {
@@ -232,6 +235,7 @@ public:
         // We use a fixed visual scale of 1.0f here and apply it to parts
         // to decouple from the 0.4f hitbox size
         
+        shader.setInt("useTexture", 0);
         // Core of the mine (Visual size 0.9)
         shader.setVec3("objectColor", glm::vec3(0.2f, 0.2f, 0.2f)); 
         glm::mat4 modelCore = glm::scale(baseModel, glm::vec3(0.9f, 0.9f, 0.9f));
@@ -275,6 +279,7 @@ public:
         baseModel = glm::rotate(baseModel, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
         baseModel = glm::scale(baseModel, size);
         
+        shader.setInt("useTexture", 0);
         // Draw the Pole
         shader.setVec3("objectColor", glm::vec3(0.9f, 0.9f, 0.9f));
         glm::mat4 modelPole = glm::translate(baseModel, glm::vec3(-0.4f, 0.0f, 0.0f));

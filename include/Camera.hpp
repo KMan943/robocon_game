@@ -7,6 +7,8 @@ public:
     float distance = 16.0f; // Increased backwards distance
     float yaw = -90.0f;
     float pitch = 35.0f; // Pitch camera slightly further down
+    bool isOrthographic = false;
+    float orthoSize = 10.0f;
 
     glm::mat4 GetViewMatrix(glm::vec3 target) {
         // Convert angles to a 3D position
