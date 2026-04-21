@@ -398,8 +398,16 @@ int main() {
         }
     };
 
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f; 
+
     while (!glfwWindowShouldClose(window)) {
-        float dt = 0.016f; // Standard frame time
+
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        float dt = 1.5*deltaTime; 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         // Start the Dear ImGui frame
